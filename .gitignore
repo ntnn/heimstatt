@@ -1,2 +1,4 @@
 /hack/tools
 /bin
+/go.work
+/go.work.sum
