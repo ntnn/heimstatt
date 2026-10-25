@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: The heimstatt Authors.
+
+apiVersion: deploy.heimstatt.dev/v1alpha1
+kind: Installation
+metadata:
+  name: heimstatt
+spec:
+  domainBase: heimstatt.127-0-0-1.sslip.io
+  oidc:
+    issuerURL: https://dex.heimstatt.127-0-0-1.sslip.io:30443/dex
+    clientID: heimstatt-kcp
+    clientSecret:
+      name: dex-heimstatt-kcp
+      key: client_secret
+    caFileRef:
+      name: heimstatt-serving
+      key: ca.crt
