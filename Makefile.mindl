@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: The heimstatt Authors.
+
+MINDL = $(GO) tool codeberg.org/ntnn/mindl download -common
+TOOLS_DIR = $(PWD)/hack/tools
+
+CONTROLLER_GEN_VER := 0.23.0
+CONTROLLER_GEN := $(TOOLS_DIR)/controller-gen-$(CONTROLLER_GEN_VER)
+CONTROLLER_GEN_URL := https://github.com/kubernetes-sigs/controller-tools/releases/download/v{{.Version}}/controller-gen-{{.OS}}-{{.Arch}}{{.Exe}}
+
+GOLANGCI_LINT_VER := 2.15.0
+GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint-$(GOLANGCI_LINT_VER)
+
+GORELEASER_VER := 2.19.0
+GORELEASER := $(TOOLS_DIR)/goreleaser-$(GORELEASER_VER)
+
+HELM_VER := 4.3.1
+HELM := $(TOOLS_DIR)/helm-$(HELM_VER)
+HELM_URL := https://get.helm.sh/helm-v{{.Version}}-{{.OS}}-{{.Arch}}.{{.OSArchive}}
+HELM_INARCHIVE := {{.OS}}-{{.Arch}}/helm{{.Exe}}
+
+KCP_VER := 0.33.1
+KCP := $(TOOLS_DIR)/kcp-$(KCP_VER)
+
+KUBECTL_VER := 1.37.1
+KUBECTL := $(TOOLS_DIR)/kubectl-$(KUBECTL_VER)
+
+KIND_VER := 0.33.0
+KIND := $(TOOLS_DIR)/kind-$(KIND_VER)
+KIND_URL := https://github.com/kubernetes-sigs/kind/releases/download/v{{.Version}}/kind-{{.OS}}-{{.Arch}}
+
+TOOLS = $(CONTROLLER_GEN) $(GOLANGCI_LINT) $(GORELEASER) $(HELM) $(KCP) $(KUBECTL) $(KIND)
+
+.PHONY: tools
+tools: $(TOOLS)
+	@$(CONTROLLER_GEN) --version
+	@$(GOLANGCI_LINT) --version | head -n 1
+	@$(GORELEASER) --version | head -n 2
+	@$(HELM) version --short
+	@$(KCP) --version
+	@$(KUBECTL) version --client
+	@$(KIND) version
+
+$(CONTROLLER_GEN):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -url '$(CONTROLLER_GEN_URL)' -version $(CONTROLLER_GEN_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/controller-gen
+
+$(GOLANGCI_LINT):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -tool golangci-lint -version $(GOLANGCI_LINT_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/golangci-lint
+
+$(GORELEASER):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -tool goreleaser -version $(GORELEASER_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/goreleaser
+
+$(HELM):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -url '$(HELM_URL)' -inarchive '$(HELM_INARCHIVE)' -version $(HELM_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/helm
+
+$(KCP):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -tool kcp -version $(KCP_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/kcp
+
+$(KUBECTL):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -tool kubectl -version $(KUBECTL_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/kubectl
+
+$(KIND):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -url '$(KIND_URL)' -version $(KIND_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/kind
