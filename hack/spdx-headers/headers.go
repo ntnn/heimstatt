@@ -47,6 +47,7 @@ var skipNames = []string{
 	"go.mod",
 	"go.sum",
 	"mindl.sum",
+	"tilt.kubeconfig.yaml",
 }
 
 // classify takes a filepath rel and returns a string and a bool.

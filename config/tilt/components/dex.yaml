@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: The heimstatt Authors.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dex
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dex-heimstatt-kcp
+  namespace: dex
+type: Opaque
+stringData:
+  client_id: heimstatt-kcp
+  client_secret: heimstatt-dev-client-secret
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dex
+  namespace: dex
+data:
+  config.yaml: |
+    issuer: https://dex.heimstatt.127-0-0-1.sslip.io:30443/dex
+    storage:
+      type: memory
+    web:
+      http: 0.0.0.0:5556
+    oauth2:
+      grantTypes:
+      - authorization_code
+      - refresh_token
+      passwordConnector: local
+    staticClients:
+    - id: heimstatt-kcp
+      name: heimstatt kcp
+      secretEnv: DEX_KCP_CLIENT_SECRET
+      redirectURIs:
+      - https://kcp.heimstatt.127-0-0-1.sslip.io:30444/oauth2/callback
+    enablePasswordDB: true
+    staticPasswords:
+    - email: admin@example.com
+      # bcrypt hash of "password"
+      hash: $2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W
+      username: admin
+      name: Admin
+      userID: 08a8684b-db88-4b73-90a9-3cd1661f5466
+      groups:
+      - team-a
+      - team-a/admins
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dex
+  namespace: dex
+  labels:
+    app: dex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dex
+  template:
+    metadata:
+      labels:
+        app: dex
+    spec:
+      containers:
+      - name: dex
+        image: ghcr.io/dexidp/dex:v2.46.1
+        command:
+        - /usr/local/bin/dex
+        - serve
+        - /etc/dex/cfg/config.yaml
+        ports:
+        - name: http
+          containerPort: 5556
+        env:
+        - name: DEX_KCP_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dex-heimstatt-kcp
+              key: client_secret
+        readinessProbe:
+          httpGet:
+            path: /dex/healthz
+            port: 5556
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dex/cfg
+      volumes:
+      - name: config
+        configMap:
+          name: dex
+          items:
+          - key: config.yaml
+            path: config.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dex
+  namespace: dex
+spec:
+  selector:
+    app: dex
+  ports:
+  - name: http
+    port: 80
+    targetPort: 5556
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: dex
+  namespace: dex
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: heimstatt
+    namespace: heimstatt
+  hostnames:
+  - dex.heimstatt.127-0-0-1.sslip.io
+  rules:
+  - backendRefs:
+    - name: dex
+      port: 80

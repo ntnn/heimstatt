@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: The heimstatt Authors.
+
+resources:
+- https://github.com/cert-manager/cert-manager/releases/download/v1.21.3/cert-manager.yaml

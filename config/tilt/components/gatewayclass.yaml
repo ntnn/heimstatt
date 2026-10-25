@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: The heimstatt Authors.
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: heimstatt
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller

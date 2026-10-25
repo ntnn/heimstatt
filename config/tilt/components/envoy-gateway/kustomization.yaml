@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: The heimstatt Authors.
+
+resources:
+- https://github.com/envoyproxy/gateway/releases/download/v1.9.2/install.yaml
