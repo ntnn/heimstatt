@@ -29,7 +29,13 @@ KIND_VER := 0.33.0
 KIND := $(TOOLS_DIR)/kind-$(KIND_VER)
 KIND_URL := https://github.com/kubernetes-sigs/kind/releases/download/v{{.Version}}/kind-{{.OS}}-{{.Arch}}
 
-TOOLS = $(CONTROLLER_GEN) $(GOLANGCI_LINT) $(GORELEASER) $(HELM) $(KCP) $(KUBECTL) $(KIND)
+# tilt names its operating systems linux, mac and windows and its architectures x86_64 and arm64.
+TILT_VER := 0.37.8
+TILT := $(TOOLS_DIR)/tilt-$(TILT_VER)
+TILT_URL := https://github.com/tilt-dev/tilt/releases/download/v{{.Version}}/tilt.{{.Version}}.{{if eq .OS "darwin"}}mac{{else}}{{.OS}}{{end}}.{{.Arch | x86_64}}.{{.OSArchive}}
+TILT_INARCHIVE := tilt{{.Exe}}
+
+TOOLS = $(CONTROLLER_GEN) $(GOLANGCI_LINT) $(GORELEASER) $(HELM) $(KCP) $(KUBECTL) $(KIND) $(TILT)
 
 .PHONY: tools
 tools: $(TOOLS)
@@ -40,6 +46,12 @@ tools: $(TOOLS)
 	@$(KCP) --version
 	@$(KUBECTL) version --client
 	@$(KIND) version
+	@$(TILT) version | head -n 1
+
+$(TILT):
+	mkdir -p $(TOOLS_DIR)
+	$(MINDL) -out $@ -url '$(TILT_URL)' -inarchive '$(TILT_INARCHIVE)' -version $(TILT_VER)
+	ln -sf $(notdir $@) $(TOOLS_DIR)/tilt
 
 $(CONTROLLER_GEN):
 	mkdir -p $(TOOLS_DIR)
