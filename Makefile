@@ -6,8 +6,8 @@ GO_TEST_FLAGS ?= -race
 WHAT ?= ./...
 
 .PHONY: check check-fix
-check:                    headers     apis-lint     lint     apis-test test
-check-fix: apis-tidy tidy headers-fix apis-lint-fix lint-fix check
+check:                    headers              apis-lint     lint     apis-test test
+check-fix: apis-tidy tidy headers-fix generate apis-lint-fix lint-fix check
 
 include Makefile.mindl
 
@@ -47,6 +47,11 @@ lint: $(GOLANGCI_LINT) go.work
 .PHONY: lint-fix
 lint-fix: override GOLANGCI_LINT_FLAGS := $(GOLANGCI_LINT_FLAGS) --fix
 lint-fix: lint
+
+.PHONY: generate
+generate: $(CONTROLLER_GEN) go.work
+	$(CONTROLLER_GEN) object paths=./apis/...
+	$(CONTROLLER_GEN) crd output:crd:dir=config/deploy/crds paths=./apis/deploy/...
 
 .PHONY: apis-test
 apis-test: go.work
