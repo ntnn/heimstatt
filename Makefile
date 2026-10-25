@@ -11,6 +11,8 @@ check-fix: apis-tidy tidy headers-fix generate apis-lint-fix lint-fix check
 
 include Makefile.mindl
 
+export PATH := $(TOOLS_DIR):$(PATH)
+
 .PHONY: go.work
 go.work:
 	test -f go.work || go work init .
@@ -60,3 +62,12 @@ apis-test: go.work
 .PHONY: test
 test: go.work
 	$(GO) test $(GO_TEST_FLAGS) $(WHAT)
+
+TILT_CLUSTER ?= heimstatt
+TILT_KUBECONFIG ?= tilt.kubeconfig.yaml
+
+.PHONY: tilt
+tilt-up: $(TILT) go.work
+	kind get clusters | grep -q $(TILT_CLUSTER) || kind create cluster --config ./config/tilt/kind.yaml --name $(TILT_CLUSTER)
+	kind export kubeconfig --name $(TILT_CLUSTER) --kubeconfig $(TILT_KUBECONFIG)
+	KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) up
