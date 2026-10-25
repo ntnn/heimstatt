@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: The heimstatt Authors.
+
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - goheader
+  settings:
+    goheader:
+      # golangci-lint managed the header for go files, hack/spdx-headers for non-go files
+      template: |-
+        SPDX-License-Identifier: Apache-2.0
+        SPDX-FileCopyrightText: The heimstatt Authors.
+
+exclusions:
+  generated: lax
