@@ -2,12 +2,18 @@
 # SPDX-FileCopyrightText: The heimstatt Authors.
 
 GO ?= go
+WHAT ?= ./...
 
 include Makefile.mindl
 
 .PHONY: check check-fix
-check: headers lint
-check-fix: headers-fix lint-fix
+check: headers apis-lint lint
+check-fix: headers-fix apis-lint-fix lint-fix
+
+.PHONY: go.work
+go.work:
+	test -f go.work || go work init .
+	go work use ./apis
 
 .PHONY: headers
 headers:
@@ -17,9 +23,17 @@ headers:
 headers-fix: override SPDX_HEADERS_FLAGS := $(SPDX_HEADERS_FLAGS) -fix
 headers-fix: headers
 
+.PHONY: apis-lint
+apis-lint: $(GOLANGCI_LINT) go.work
+	cd apis && $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) $(WHAT)
+
+.PHONY: apis-lint-fix
+apis-lint-fix: override GOLANGCI_LINT_FLAGS := $(GOLANGCI_LINT_FLAGS) --fix
+apis-lint-fix: apis-lint
+
 .PHONY: lint
-lint: $(GOLANGCI_LINT)
-	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) ./...
+lint: $(GOLANGCI_LINT) go.work
+	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) $(WHAT)
 
 .PHONY: lint-fix
 lint-fix: override GOLANGCI_LINT_FLAGS := $(GOLANGCI_LINT_FLAGS) --fix
