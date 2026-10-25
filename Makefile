@@ -5,11 +5,11 @@ GO ?= go
 GO_TEST_FLAGS ?= -race
 WHAT ?= ./...
 
-include Makefile.mindl
-
 .PHONY: check check-fix
 check:                    headers     apis-lint     lint     apis-test test
 check-fix: apis-tidy tidy headers-fix apis-lint-fix lint-fix check
+
+include Makefile.mindl
 
 .PHONY: go.work
 go.work:
