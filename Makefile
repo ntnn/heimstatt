@@ -8,8 +8,8 @@ WHAT ?= ./...
 include Makefile.mindl
 
 .PHONY: check check-fix
-check:     headers     apis-lint     lint     apis-test test
-check-fix: headers-fix apis-lint-fix lint-fix check
+check:                    headers     apis-lint     lint     apis-test test
+check-fix: apis-tidy tidy headers-fix apis-lint-fix lint-fix check
 
 .PHONY: go.work
 go.work:
@@ -24,6 +24,10 @@ headers:
 headers-fix: override SPDX_HEADERS_FLAGS := $(SPDX_HEADERS_FLAGS) -fix
 headers-fix: headers
 
+.PHONY: apis-tidy
+apis-tidy:
+	cd apis && $(GO) mod tidy -v
+
 .PHONY: apis-lint
 apis-lint: $(GOLANGCI_LINT) go.work
 	cd apis && $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) $(WHAT)
@@ -31,6 +35,10 @@ apis-lint: $(GOLANGCI_LINT) go.work
 .PHONY: apis-lint-fix
 apis-lint-fix: override GOLANGCI_LINT_FLAGS := $(GOLANGCI_LINT_FLAGS) --fix
 apis-lint-fix: apis-lint
+
+.PHONY: tidy
+tidy:
+	$(GO) mod tidy -v
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) go.work
