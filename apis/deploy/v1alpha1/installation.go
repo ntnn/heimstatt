@@ -12,11 +12,17 @@ import (
 //
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:shortName=inst
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 type Installation struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec InstallationSpec `json:"spec"`
+
+	// Status is what heimstatt observed of the deployed components.
+	Status InstallationStatus `json:"status,omitempty"`
 }
 
 // InstallationList is the collection kind for Installation.
@@ -36,22 +42,84 @@ type InstallationSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	DomainBase string `json:"domainBase"`
 
-	// OIDC is the OpenID Connect issuer the heimstatt components trust.
+	// OIDC configures OpenID Connect Authentication.
 	//
 	// +kubebuilder:validation:Required
 	OIDC OIDC `json:"oidc"`
+
+	// Kcp configures how kcp is deployed.
+	//
+	// +kubebuilder:validation:Required
+	Kcp Kcp `json:"kcp"`
 }
 
-// OIDC configures the OpenID Connect issuer the control plane authenticates against.
+// Kcp configures the kcp instance of one heimstatt deployment.
+type Kcp struct {
+	// Shards are the kcp shards. Exactly one must be named root.
+	//
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:XValidation:rule="self.filter(s, s.name == 'root').size() == 1",message="exactly one shard must be named root"
+	Shards []Shard `json:"shards"`
+}
+
+// Shard is one kcp shard.
+type Shard struct {
+	// Name is the shard's name in kcp.
+	//
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
+	Name string `json:"name"`
+
+	// Etcd is the storage this shard writes to.
+	// The prefix is automatically the name.
+	//
+	// +kubebuilder:validation:Required
+	Etcd EtcdConfig `json:"etcd"`
+
+	// Replicas is how many replicas are configured. nil leaves the
+	// kcp-operator default.
+	//
+	// +kubebuilder:validation:Minimum=1
+	Replicas *int32 `json:"replicas,omitempty"`
+}
+
+// EtcdConfig points at one etcd cluster.
+type EtcdConfig struct {
+	// Endpoints are etcd client URLs, e.g. https://etcd.heimstatt.svc.cluster.local:2379.
+	//
+	// +kubebuilder:validation:MinItems=1
+	Endpoints []string `json:"endpoints"`
+
+	// TLSSecretRef is the Secret with the material to reach etcd over TLS.
+	// A CA bundle under ca.crt and, if the etcd requires it, tls.crt and tls.key.
+	TLSSecretRef *corev1.LocalObjectReference `json:"tlsSecretRef,omitempty"`
+}
+
+// InstallationStatus is the observed state of one heimstatt deployment.
+type InstallationStatus struct {
+	// Phase summarizes whether the deployment is usable.
+	//
+	// +kubebuilder:validation:MinLength=1
+	Phase string `json:"phase,omitempty"`
+
+	// ObservedGeneration is the generation Status was computed for.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Conditions carry the detail behind Phase.
+	//
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// OIDC configures OpenID Connect Authentication.
 type OIDC struct {
 	// IssuerURL is the issuer to authenticate against. Only https is accepted.
 	IssuerURL string `json:"issuerURL,omitempty"`
 
-	// ClientID is the OIDC client id..
+	// ClientID is the OIDC client id.
 	ClientID string `json:"clientID,omitempty"`
-
-	// ClientSecretRef is the OIDC client secret.
-	ClientSecretRef *corev1.SecretKeySelector `json:"clientSecret,omitempty"`
 
 	// CAFileRef is the CA bundle for the OIDC provider.
 	CAFileRef *corev1.SecretKeySelector `json:"caFileRef,omitempty"`
