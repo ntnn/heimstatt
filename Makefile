@@ -65,9 +65,14 @@ test: go.work
 
 TILT_CLUSTER ?= heimstatt
 TILT_KUBECONFIG ?= tilt.kubeconfig.yaml
+TILT_UP := up
 
-.PHONY: tilt
+.PHONY: tilt-up
 tilt-up: $(TILT) go.work
 	kind get clusters | grep -q $(TILT_CLUSTER) || kind create cluster --config ./config/tilt/kind.yaml --name $(TILT_CLUSTER)
 	kind export kubeconfig --name $(TILT_CLUSTER) --kubeconfig $(TILT_KUBECONFIG)
-	KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) up
+	echo KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) $(TILT_UP)
+
+.PHONY: tilt-ci
+tilt-ci: override TILT_UP := ci
+tilt-ci: tilt-up
