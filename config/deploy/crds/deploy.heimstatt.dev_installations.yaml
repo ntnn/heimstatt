@@ -16,7 +16,14 @@ spec:
     singular: installation
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Installation is one heimstatt deployment on one cluster.
@@ -46,6 +53,69 @@ spec:
                 description: DomainBase is the DNS suffix for heimstatt components.
                 minLength: 1
                 type: string
+              kcp:
+                description: Kcp is the kcp control plane to deploy.
+                properties:
+                  shards:
+                    description: Shards are the kcp shards making up the control plane.
+                      Exactly one must be named root.
+                    items:
+                      description: 'Shard is one kcp shard: one apiserver backed by
+                        one etcd.'
+                      properties:
+                        etcd:
+                          description: Etcd is the storage this shard writes to.
+                          properties:
+                            endpoints:
+                              description: |-
+                                Endpoints are etcd client URLs, e.g. https://etcd.heimstatt.svc.cluster.local:2379.
+                                Several shards may share one etcd, they are kept apart by their prefixes.
+                              items:
+                                type: string
+                              minItems: 1
+                              type: array
+                            tlsSecretRef:
+                              description: |-
+                                TLSSecretRef is the Secret with the material to reach etcd over TLS: a CA bundle under ca.crt
+                                and, if the etcd requires it, tls.crt and tls.key.
+                              properties:
+                                name:
+                                  default: ""
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                  type: string
+                              type: object
+                              x-kubernetes-map-type: atomic
+                          required:
+                          - endpoints
+                          type: object
+                        name:
+                          description: |-
+                            Name is the shard's name in kcp. It also picks the etcd prefix the shard stores its data under,
+                            so it outlives the object: renaming a shard or dropping it from the list leaves its data in etcd,
+                            and a new shard under the same name reads it back.
+                            The name root is reserved for the shard that becomes the kcp root shard.
+                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                          type: string
+                      required:
+                      - etcd
+                      - name
+                      type: object
+                    minItems: 1
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                    x-kubernetes-validations:
+                    - message: exactly one shard must be named root
+                      rule: self.filter(s, s.name == 'root').size() == 1
+                required:
+                - shards
+                type: object
               oidc:
                 description: OIDC is the OpenID Connect issuer the heimstatt components
                   trust.
@@ -78,7 +148,9 @@ spec:
                     description: ClientID is the OIDC client id..
                     type: string
                   clientSecret:
-                    description: ClientSecretRef is the OIDC client secret.
+                    description: |-
+                      ClientSecretRef is the OIDC client secret. Not handed to kcp: kube OIDC is secretless, and
+                      kcp-operator deprecated the field. It stays for the provider-side client registration.
                     properties:
                       key:
                         description: The key of the secret to select from.  Must be
@@ -108,10 +180,86 @@ spec:
                 type: object
             required:
             - domainBase
+            - kcp
             - oidc
+            type: object
+          status:
+            description: Status is what heimstatt observed of the deployed components.
+            properties:
+              conditions:
+                description: Conditions carry the detail behind Phase.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: ObservedGeneration is the generation Status was computed
+                  for.
+                format: int64
+                type: integer
+              phase:
+                description: Phase summarizes whether the deployment is usable.
+                minLength: 1
+                type: string
             type: object
         required:
         - spec
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
