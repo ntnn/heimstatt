@@ -10,9 +10,9 @@ spec:
   oidc:
     issuerURL: https://dex.heimstatt.127-0-0-1.sslip.io:30443/dex
     clientID: heimstatt-kcp
-    clientSecret:
-      name: dex-heimstatt-kcp
-      key: client_secret
     caFileRef:
       name: heimstatt-serving
       key: ca.crt
+  etcd:
+    endpoints:
+      - http://etcd.heimstatt.svc.cluster.local:2379
