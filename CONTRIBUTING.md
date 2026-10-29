@@ -12,9 +12,8 @@ The `check-fix` recipe documented below automatically adds these.
 
 ## Setup
 
-1. Run `make go.work` to create the gitignored `go.work` in the root
-2. Run `make tools` to download the tools
-3. Start developing
+1. Run `make tools` to download the tools
+2. Start developing
 
 ## Testing
 
