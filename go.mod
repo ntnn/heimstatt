@@ -4,6 +4,8 @@ go 1.26.0
 
 tool codeberg.org/ntnn/mindl
 
+replace heimstatt.dev/apis => ./apis
+
 require github.com/stretchr/testify v1.12.1
 
 require (
