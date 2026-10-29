@@ -31,7 +31,14 @@ jobs:
         run: |
           fail=0
           for sha in $(git rev-list --no-merges "${BASE_SHA}..${HEAD_SHA}"); do
+              author=$(git log -1 --format='%an' "${sha}")
               email=$(git log -1 --format='%ae' "${sha}")
+              # skip bots for the dco check
+              case "${author}|${email}" in
+                  *'[bot]'*)
+                      echo "commit ${sha}: skipping bot commit by ${author}"
+                      continue ;;
+              esac
               # The email is what the DCO certifies; display names vary across forges.
               if git log -1 --format='%B' "${sha}" | grep -i '^signed-off-by:' | grep -qiF "<${email}>"; then
                   continue
