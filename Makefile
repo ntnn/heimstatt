@@ -13,11 +13,6 @@ include Makefile.mindl
 
 export PATH := $(TOOLS_DIR):$(PATH)
 
-.PHONY: go.work
-go.work:
-	test -f go.work || go work init .
-	go work use ./apis
-
 .PHONY: headers
 headers:
 	$(GO) run ./hack/spdx-headers $(SPDX_HEADERS_FLAGS)
@@ -31,7 +26,7 @@ apis-tidy:
 	cd apis && $(GO) mod tidy -v
 
 .PHONY: apis-lint
-apis-lint: $(GOLANGCI_LINT) go.work
+apis-lint: $(GOLANGCI_LINT)
 	cd apis && $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) $(WHAT)
 
 .PHONY: apis-lint-fix
@@ -43,7 +38,7 @@ tidy:
 	$(GO) mod tidy -v
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT) go.work
+lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) $(WHAT)
 
 .PHONY: lint-fix
@@ -51,16 +46,16 @@ lint-fix: override GOLANGCI_LINT_FLAGS := $(GOLANGCI_LINT_FLAGS) --fix
 lint-fix: lint
 
 .PHONY: generate
-generate: $(CONTROLLER_GEN) go.work
-	$(CONTROLLER_GEN) object paths=./apis/...
-	$(CONTROLLER_GEN) crd output:crd:dir=config/deploy/crds paths=./apis/deploy/...
+generate: $(CONTROLLER_GEN)
+	cd apis && $(CONTROLLER_GEN) object paths=./...
+	cd apis && $(CONTROLLER_GEN) crd output:crd:dir=../config/deploy/crds paths=./deploy/...
 
 .PHONY: apis-test
-apis-test: go.work
+apis-test:
 	cd apis && $(GO) test $(GO_TEST_FLAGS) $(WHAT)
 
 .PHONY: test
-test: go.work
+test:
 	$(GO) test $(GO_TEST_FLAGS) $(WHAT)
 
 TILT_CLUSTER ?= heimstatt
@@ -68,7 +63,7 @@ TILT_KUBECONFIG ?= tilt.kubeconfig.yaml
 TILT_UP := up
 
 .PHONY: tilt-up
-tilt-up: $(TILT) go.work
+tilt-up: $(TILT)
 	kind get clusters | grep -q $(TILT_CLUSTER) || kind create cluster --config ./config/tilt/kind.yaml --name $(TILT_CLUSTER)
 	kind export kubeconfig --name $(TILT_CLUSTER) --kubeconfig $(TILT_KUBECONFIG)
 	echo KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) $(TILT_UP)
