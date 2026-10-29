@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Installation is one heimstatt deployment on one cluster.
+// Installation is one heimstatt deployment.
 //
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:shortName=inst
