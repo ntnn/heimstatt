@@ -47,41 +47,23 @@ type InstallationSpec struct {
 	// +kubebuilder:validation:Required
 	OIDC OIDC `json:"oidc"`
 
-	// Kcp configures how kcp is deployed.
-	//
-	// +kubebuilder:validation:Required
-	Kcp Kcp `json:"kcp"`
-}
-
-// Kcp configures the kcp instance of one heimstatt deployment.
-type Kcp struct {
-	// Shards are the kcp shards. Exactly one must be named root.
-	//
-	// +listType=map
-	// +listMapKey=name
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:XValidation:rule="self.filter(s, s.name == 'root').size() == 1",message="exactly one shard must be named root"
-	Shards []Shard `json:"shards"`
-}
-
-// Shard is one kcp shard.
-type Shard struct {
-	// Name is the shard's name in kcp.
-	//
-	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
-	Name string `json:"name"`
-
 	// Etcd is the storage this shard writes to.
 	// The prefix is automatically the name.
 	//
 	// +kubebuilder:validation:Required
 	Etcd EtcdConfig `json:"etcd"`
+}
 
-	// Replicas is how many replicas are configured. nil leaves the
-	// kcp-operator default.
-	//
-	// +kubebuilder:validation:Minimum=1
-	Replicas *int32 `json:"replicas,omitempty"`
+// OIDC configures OpenID Connect Authentication.
+type OIDC struct {
+	// IssuerURL is the issuer to authenticate against. Only https is accepted.
+	IssuerURL string `json:"issuerURL,omitempty"`
+
+	// ClientID is the OIDC client id.
+	ClientID string `json:"clientID,omitempty"`
+
+	// CAFileRef is the CA bundle for the OIDC provider.
+	CAFileRef *corev1.SecretKeySelector `json:"caFileRef,omitempty"`
 }
 
 // EtcdConfig points at one etcd cluster.
@@ -111,16 +93,4 @@ type InstallationStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-}
-
-// OIDC configures OpenID Connect Authentication.
-type OIDC struct {
-	// IssuerURL is the issuer to authenticate against. Only https is accepted.
-	IssuerURL string `json:"issuerURL,omitempty"`
-
-	// ClientID is the OIDC client id.
-	ClientID string `json:"clientID,omitempty"`
-
-	// CAFileRef is the CA bundle for the OIDC provider.
-	CAFileRef *corev1.SecretKeySelector `json:"caFileRef,omitempty"`
 }
