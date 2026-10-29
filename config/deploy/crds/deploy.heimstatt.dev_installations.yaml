@@ -26,7 +26,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Installation is one heimstatt deployment on one cluster.
+        description: Installation is one heimstatt deployment.
         properties:
           apiVersion:
             description: |-
