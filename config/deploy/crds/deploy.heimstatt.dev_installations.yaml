@@ -53,70 +53,35 @@ spec:
                 description: DomainBase is the DNS suffix for heimstatt components.
                 minLength: 1
                 type: string
-              kcp:
-                description: Kcp configures how kcp is deployed.
+              etcd:
+                description: |-
+                  Etcd is the storage this shard writes to.
+                  The prefix is automatically the name.
                 properties:
-                  shards:
-                    description: Shards are the kcp shards. Exactly one must be named
-                      root.
+                  endpoints:
+                    description: Endpoints are etcd client URLs, e.g. https://etcd.heimstatt.svc.cluster.local:2379.
                     items:
-                      description: Shard is one kcp shard.
-                      properties:
-                        etcd:
-                          description: |-
-                            Etcd is the storage this shard writes to.
-                            The prefix is automatically the name.
-                          properties:
-                            endpoints:
-                              description: Endpoints are etcd client URLs, e.g. https://etcd.heimstatt.svc.cluster.local:2379.
-                              items:
-                                type: string
-                              minItems: 1
-                              type: array
-                            tlsSecretRef:
-                              description: |-
-                                TLSSecretRef is the Secret with the material to reach etcd over TLS.
-                                A CA bundle under ca.crt and, if the etcd requires it, tls.crt and tls.key.
-                              properties:
-                                name:
-                                  default: ""
-                                  description: |-
-                                    Name of the referent.
-                                    This field is effectively required, but due to backwards compatibility is
-                                    allowed to be empty. Instances of this type with an empty value here are
-                                    almost certainly wrong.
-                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
-                          required:
-                          - endpoints
-                          type: object
-                        name:
-                          description: Name is the shard's name in kcp.
-                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
-                          type: string
-                        replicas:
-                          description: |-
-                            Replicas is how many replicas are configured. nil leaves the
-                            kcp-operator default.
-                          format: int32
-                          minimum: 1
-                          type: integer
-                      required:
-                      - etcd
-                      - name
-                      type: object
+                      type: string
                     minItems: 1
                     type: array
-                    x-kubernetes-list-map-keys:
-                    - name
-                    x-kubernetes-list-type: map
-                    x-kubernetes-validations:
-                    - message: exactly one shard must be named root
-                      rule: self.filter(s, s.name == 'root').size() == 1
+                  tlsSecretRef:
+                    description: |-
+                      TLSSecretRef is the Secret with the material to reach etcd over TLS.
+                      A CA bundle under ca.crt and, if the etcd requires it, tls.crt and tls.key.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
                 required:
-                - shards
+                - endpoints
                 type: object
               oidc:
                 description: OIDC configures OpenID Connect Authentication.
@@ -155,7 +120,7 @@ spec:
                 type: object
             required:
             - domainBase
-            - kcp
+            - etcd
             - oidc
             type: object
           status:
