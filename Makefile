@@ -3,6 +3,7 @@
 
 GO ?= go
 GO_TEST_FLAGS ?= -race
+GO_BUILD_FLAGS ?= -ldflags '-s -w'
 WHAT ?= ./...
 
 .PHONY: check check-fix
@@ -57,6 +58,10 @@ apis-test:
 .PHONY: test
 test:
 	$(GO) test $(GO_TEST_FLAGS) $(WHAT)
+
+.PHONY: build
+build:
+	$(GO) build $(GO_BUILD_FLAGS) -o bin/ ./cmd/...
 
 TILT_CLUSTER ?= heimstatt
 TILT_KUBECONFIG ?= tilt.kubeconfig.yaml
