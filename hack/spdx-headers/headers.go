@@ -38,6 +38,7 @@ var skipDirs = []string{
 	"bin",
 	"config/*/crds",
 	"config/*/golden",
+	"config/tilt/generated",
 	"hack/tools",
 }
 
