@@ -81,3 +81,31 @@ k8s_resource(
     pod_readiness = 'ignore',
     resource_deps = ['heimstatt-crds', 'heimstatt-namespace', 'heimstatt-etcd', 'kcp-operator'],
 )
+
+GENERATE_DIR = 'config/tilt/generated'
+INSTALLATION_TEMPLATED_MANIFESTS = GENERATE_DIR + '/kcp.yaml'
+INSTALLATION_RENDER = 'mkdir -p ' + GENERATE_DIR + ' && go run ./cmd/heimctl template config/tilt/manifests/installation.yaml'
+
+local(INSTALLATION_RENDER + ' > ' + INSTALLATION_TEMPLATED_MANIFESTS)
+k8s_yaml(INSTALLATION_TEMPLATED_MANIFESTS)
+
+k8s_resource(
+    new_name = 'heimctl-kcp',
+    objects = [
+        'heimstatt:cacheserver',
+        'root:rootshard',
+        'theseus:shard',
+        'heimstatt:frontproxy',
+        'heimstatt-front-proxy:tlsroute',
+        'root-kcp:tlsroute',
+        'theseus-shard-kcp:tlsroute',
+    ],
+    extra_pod_selectors = [{'app.kubernetes.io/managed-by': 'kcp-operator'}],
+    resource_deps = ['heimstatt-namespace', 'heimstatt-crds', 'heimstatt-etcd', 'heimstatt-gateway', 'kcp-operator', 'installation'],
+)
+
+local_resource(
+    name = 'heimctl-render',
+    cmd = INSTALLATION_RENDER + ' > ' + INSTALLATION_TEMPLATED_MANIFESTS,
+    deps = ['cmd', 'pkg', 'apis', 'config/tilt/manifests'],
+)

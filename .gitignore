@@ -4,3 +4,4 @@
 /go.work.sum
 *.kubeconfig
 *.kubeconfig.yaml
+/config/tilt/generated/
