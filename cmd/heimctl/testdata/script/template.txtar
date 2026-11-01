@@ -1,0 +1,194 @@
+# one Installation renders the kcp objects of a single-cluster kcp
+exec heimctl template installation.yaml
+cmp stdout expected.yaml
+! stderr .
+
+-- installation.yaml --
+apiVersion: deploy.heimstatt.dev/v1alpha1
+kind: Installation
+metadata:
+  name: heimstatt
+  namespace: heimstatt
+spec:
+  domainBase: heimstatt.127-0-0-1.sslip.io
+  oidc:
+    issuerURL: https://dex.heimstatt.127-0-0-1.sslip.io:30443/dex
+    clientID: heimstatt-kcp
+    caFileRef:
+      name: heimstatt-serving
+      key: ca.crt
+  etcd:
+    endpoints:
+    - http://etcd.heimstatt.svc.cluster.local:2379
+-- expected.yaml --
+apiVersion: operator.kcp.io/v1alpha1
+kind: CacheServer
+metadata:
+  name: heimstatt
+  namespace: heimstatt
+spec:
+  certificates:
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: selfsigned
+  etcd:
+    endpoints:
+    - http://etcd.heimstatt.svc.cluster.local:2379
+    prefix: /cache/
+  replicas: 1
+status: {}
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: RootShard
+metadata:
+  name: root
+  namespace: heimstatt
+spec:
+  auth:
+    oidc:
+      caFileRef:
+        key: ca.crt
+        name: heimstatt-serving
+      clientID: heimstatt-kcp
+      issuerURL: https://dex.heimstatt.127-0-0-1.sslip.io:30443/dex
+    serviceAccount:
+      enabled: true
+  cache:
+    ref:
+      name: heimstatt
+  certificateTemplates:
+    server:
+      spec:
+        dnsNames:
+        - root.kcp.heimstatt.127-0-0-1.sslip.io
+  certificates:
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: selfsigned
+  etcd:
+    endpoints:
+    - http://etcd.heimstatt.svc.cluster.local:2379
+    prefix: /shard/root
+  external:
+    hostname: kcp.heimstatt.127-0-0-1.sslip.io
+    port: 30444
+    privateHostname: heimstatt-front-proxy.heimstatt.svc.cluster.local
+    privatePort: 30444
+  replicas: 1
+status: {}
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: Shard
+metadata:
+  name: theseus
+  namespace: heimstatt
+spec:
+  auth:
+    oidc:
+      caFileRef:
+        key: ca.crt
+        name: heimstatt-serving
+      clientID: heimstatt-kcp
+      issuerURL: https://dex.heimstatt.127-0-0-1.sslip.io:30443/dex
+    serviceAccount:
+      enabled: true
+  certificateTemplates:
+    server:
+      spec:
+        dnsNames:
+        - theseus.kcp.heimstatt.127-0-0-1.sslip.io
+  etcd:
+    endpoints:
+    - http://etcd.heimstatt.svc.cluster.local:2379
+    prefix: /shard/theseus
+  replicas: 1
+  rootShard:
+    ref:
+      name: root
+status: {}
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: FrontProxy
+metadata:
+  name: heimstatt
+  namespace: heimstatt
+spec:
+  auth:
+    oidc:
+      caFileRef:
+        key: ca.crt
+        name: heimstatt-serving
+      clientID: heimstatt-kcp
+      issuerURL: https://dex.heimstatt.127-0-0-1.sslip.io:30443/dex
+    serviceAccount:
+      enabled: true
+  external:
+    hostname: kcp.heimstatt.127-0-0-1.sslip.io
+    port: 30444
+  replicas: 1
+  rootShard:
+    ref:
+      name: root
+status: {}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: heimstatt-front-proxy
+  namespace: heimstatt
+spec:
+  hostnames:
+  - kcp.heimstatt.127-0-0-1.sslip.io
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: heimstatt
+  rules:
+  - backendRefs:
+    - group: ""
+      kind: Service
+      name: heimstatt-front-proxy
+      port: 30444
+status: {}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: root-kcp
+  namespace: heimstatt
+spec:
+  hostnames:
+  - root.kcp.heimstatt.127-0-0-1.sslip.io
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: heimstatt
+  rules:
+  - backendRefs:
+    - group: ""
+      kind: Service
+      name: root-kcp
+      port: 6443
+status: {}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: theseus-shard-kcp
+  namespace: heimstatt
+spec:
+  hostnames:
+  - theseus.kcp.heimstatt.127-0-0-1.sslip.io
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: heimstatt
+  rules:
+  - backendRefs:
+    - group: ""
+      kind: Service
+      name: theseus-shard-kcp
+      port: 6443
+status: {}

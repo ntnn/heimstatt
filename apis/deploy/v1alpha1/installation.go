@@ -8,6 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// InstallationKind is the kind of Installation.
+const InstallationKind = "Installation"
+
 // Installation is one heimstatt deployment.
 //
 // +kubebuilder:object:root=true
