@@ -81,3 +81,28 @@ k8s_resource(
     pod_readiness = 'ignore',
     resource_deps = ['heimstatt-crds', 'heimstatt-namespace', 'heimstatt-etcd', 'kcp-operator'],
 )
+
+INSTALLATION_SOURCE = 'config/tilt/manifests/installation.yaml'
+
+# The rendered manifests are a Tiltfile input rather than a file on disk: writing them from a local()
+# at parse time puts the output in the Tiltfile's own watch set, so each parse retriggers the parse.
+k8s_yaml(local('go run ./cmd/heimctl template ' + INSTALLATION_SOURCE, quiet = True))
+
+# The renderer's inputs, so that template changes re-render the manifests.
+for dep in ['cmd', 'pkg', 'apis']:
+    watch_file(dep)
+
+k8s_resource(
+    new_name = 'heimctl-kcp',
+    objects = [
+        'heimstatt:cacheserver',
+        'root:rootshard',
+        'theseus:shard',
+        'heimstatt:frontproxy',
+        'heimstatt-front-proxy:tlsroute',
+        'root-kcp:tlsroute',
+        'theseus-shard-kcp:tlsroute',
+    ],
+    extra_pod_selectors = [{'app.kubernetes.io/managed-by': 'kcp-operator'}],
+    resource_deps = ['heimstatt-namespace', 'heimstatt-crds', 'heimstatt-etcd', 'heimstatt-gateway', 'kcp-operator', 'installation'],
+)
