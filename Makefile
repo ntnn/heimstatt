@@ -3,6 +3,7 @@
 
 GO ?= go
 GO_TEST_FLAGS ?= -race
+GO_BUILD_FLAGS ?= -ldflags '-s -w'
 WHAT ?= ./...
 
 .PHONY: check check-fix
@@ -58,6 +59,10 @@ apis-test:
 test:
 	$(GO) test $(GO_TEST_FLAGS) $(WHAT)
 
+.PHONY: build
+build:
+	$(GO) build $(GO_BUILD_FLAGS) -o bin/ ./cmd/...
+
 TILT_CLUSTER ?= heimstatt
 TILT_KUBECONFIG ?= tilt.kubeconfig.yaml
 TILT_UP := up
@@ -66,7 +71,7 @@ TILT_UP := up
 tilt-up: $(TILT)
 	kind get clusters | grep -q $(TILT_CLUSTER) || kind create cluster --config ./config/tilt/kind.yaml --name $(TILT_CLUSTER)
 	kind export kubeconfig --name $(TILT_CLUSTER) --kubeconfig $(TILT_KUBECONFIG)
-	echo KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) $(TILT_UP)
+	KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) $(TILT_UP)
 
 .PHONY: tilt-ci
 tilt-ci: override TILT_UP := ci

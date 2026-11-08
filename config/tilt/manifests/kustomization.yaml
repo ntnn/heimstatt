@@ -4,3 +4,4 @@
 namespace: heimstatt
 resources:
 - installation.yaml
+- admin-kubeconfig.yaml

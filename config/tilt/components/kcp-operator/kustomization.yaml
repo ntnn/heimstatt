@@ -3,3 +3,7 @@
 
 resources:
 - github.com/kcp-dev/kcp-operator/config/default?ref=v0.10.3
+
+images:
+- name: ghcr.io/kcp-dev/kcp-operator
+  newTag: v0.10.2
