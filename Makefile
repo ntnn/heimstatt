@@ -71,7 +71,7 @@ TILT_UP := up
 tilt-up: $(TILT)
 	kind get clusters | grep -q $(TILT_CLUSTER) || kind create cluster --config ./config/tilt/kind.yaml --name $(TILT_CLUSTER)
 	kind export kubeconfig --name $(TILT_CLUSTER) --kubeconfig $(TILT_KUBECONFIG)
-	echo KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) $(TILT_UP)
+	KUBECONFIG="$(TILT_KUBECONFIG)" $(TILT) $(TILT_UP)
 
 .PHONY: tilt-ci
 tilt-ci: override TILT_UP := ci
