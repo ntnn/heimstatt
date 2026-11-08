@@ -4,8 +4,8 @@
 package main
 
 import (
+	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
@@ -34,12 +34,12 @@ var commentPrefixes = map[string]string{
 // cache artifacts or contain generated output.
 // A "*" matches one path segment, so one entry covers one directory per API group.
 var skipDirs = []string{
-	".git",
-	"bin",
-	"config/*/crds",
-	"config/*/golden",
+	".git/*",
+	"bin/*",
+	"config/**/crds/*",
+	"config/**/golden/*",
 	"config/tilt/generated",
-	"hack/tools",
+	"hack/tools/*",
 }
 
 // skipNames is skipDirs but for files.
@@ -48,7 +48,7 @@ var skipNames = []string{
 	"go.mod",
 	"go.sum",
 	"mindl.sum",
-	"tilt.kubeconfig.yaml",
+	"*.kubeconfig.yaml",
 }
 
 // classify takes a filepath rel and returns a string and a bool.
@@ -75,27 +75,24 @@ func skipped(rel string) bool {
 	if slash == "" || slash == "." {
 		return false
 	}
-	segments := strings.Split(slash, "/")
 	for _, pattern := range skipDirs {
-		if matchSegments(strings.Split(pattern, "/"), segments) {
+		match, err := path.Match(pattern, rel)
+		if err != nil {
+			panic(err)
+		}
+		if match {
 			return true
 		}
 	}
-	return slices.Contains(skipNames, filepath.Base(slash))
-}
-
-// matchSegments reports whether segments start with pattern, where "*" matches any single segment.
-func matchSegments(pattern, segments []string) bool {
-	if len(segments) < len(pattern) {
-		return false
-	}
-	for i, want := range pattern {
-		if want == "*" {
-			continue
+	filename := filepath.Base(rel)
+	for _, pattern := range skipNames {
+		match, err := path.Match(pattern, filename)
+		if err != nil {
+			panic(err)
 		}
-		if want != segments[i] {
-			return false
+		if match {
+			return true
 		}
 	}
-	return true
+	return false
 }
