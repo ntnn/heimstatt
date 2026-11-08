@@ -1,0 +1,71 @@
+# another kind is refused
+! exec heimctl template configmap.yaml
+stderr 'document is "v1"/"ConfigMap", want deploy.heimstatt.dev/v1alpha1/Installation'
+
+# a misspelled field is refused instead of silently ignored
+! exec heimctl template typo.yaml
+stderr 'unknown field "domainBasee"'
+
+# an Installation without an etcd endpoint is refused
+! exec heimctl template no-endpoints.yaml
+stderr 'spec.etcd.endpoints is required'
+
+# a missing file says which one it could not open
+! exec heimctl template missing.yaml
+stderr 'open missing.yaml: no such file or directory'
+! stdout .
+
+# an Installation without a namespace writes nothing
+! exec heimctl template no-namespace.yaml
+stderr 'metadata.namespace'
+! stdout .
+
+# template wants exactly one path
+! exec heimctl template
+stderr 'accepts 1 arg'
+
+# an unknown command is not silently accepted
+! exec heimctl install
+stderr 'unknown command "install"'
+
+# help names the arguments
+exec heimctl template -h
+stdout 'heimctl template <installation.yaml>'
+
+-- configmap.yaml --
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: heimstatt
+data:
+  kcp: no
+-- typo.yaml --
+apiVersion: deploy.heimstatt.dev/v1alpha1
+kind: Installation
+metadata:
+  name: heimstatt
+  namespace: heimstatt
+spec:
+  domainBasee: heimstatt.127-0-0-1.sslip.io
+  etcd:
+    endpoints:
+    - http://etcd.heimstatt.svc.cluster.local:2379
+-- no-namespace.yaml --
+apiVersion: deploy.heimstatt.dev/v1alpha1
+kind: Installation
+metadata:
+  name: heimstatt
+spec:
+  domainBase: heimstatt.127-0-0-1.sslip.io
+  etcd:
+    endpoints:
+    - http://etcd.heimstatt.svc.cluster.local:2379
+-- no-endpoints.yaml --
+apiVersion: deploy.heimstatt.dev/v1alpha1
+kind: Installation
+metadata:
+  name: heimstatt
+  namespace: heimstatt
+spec:
+  domainBase: heimstatt.127-0-0-1.sslip.io
+

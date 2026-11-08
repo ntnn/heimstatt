@@ -5,6 +5,7 @@ apiVersion: deploy.heimstatt.dev/v1alpha1
 kind: Installation
 metadata:
   name: heimstatt
+  namespace: heimstatt
 spec:
   domainBase: heimstatt.127-0-0-1.sslip.io
   oidc:
