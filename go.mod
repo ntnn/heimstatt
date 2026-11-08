@@ -7,7 +7,7 @@ tool codeberg.org/ntnn/mindl
 replace heimstatt.dev/apis => ./apis
 
 require (
-	github.com/kcp-dev/kcp-operator/sdk v0.10.2
+	github.com/kcp-dev/kcp-operator/sdk v0.10.3
 	github.com/rogpeppe/go-internal v1.16.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
