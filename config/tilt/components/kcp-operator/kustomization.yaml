@@ -6,4 +6,4 @@ resources:
 
 images:
 - name: ghcr.io/kcp-dev/kcp-operator
-  newTag: v0.10.2
+  newTag: v0.10.2@sha256:289a1a338117840003f7120d9b9190b1624426d4ba9de443fd8e8a9e11ae56fa
