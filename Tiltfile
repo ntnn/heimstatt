@@ -106,3 +106,24 @@ k8s_resource(
     extra_pod_selectors = [{'app.kubernetes.io/managed-by': 'kcp-operator'}],
     resource_deps = ['heimstatt-namespace', 'heimstatt-crds', 'heimstatt-etcd', 'heimstatt-gateway', 'kcp-operator', 'installation'],
 )
+
+k8s_resource(
+    new_name = 'heimstatt-admin-kubeconfig',
+    objects = ['admin:kubeconfig'],
+    pod_readiness = 'ignore',
+    resource_deps = ['heimstatt-namespace', 'kcp-operator', 'heimctl-kcp'],
+)
+
+KCP_KUBECONFIG = 'heimstatt.kubeconfig.yaml'
+KCP_KUBECONFIG_EXPORT = ('kubectl -n heimstatt get secret "$(kubectl -n heimstatt get kubeconfig admin -o jsonpath="{.spec.secretRef.name}")"' +
+                         ' -o jsonpath="{.data.kubeconfig}" | base64 -d > ' + KCP_KUBECONFIG +
+                         ' && chmod 600 ' + KCP_KUBECONFIG)
+
+local_resource(
+    name = 'heimstatt-kubeconfig',
+    cmd = 'kubectl -n heimstatt wait --for=condition=Available --timeout=300s kubeconfigs.operator.kcp.io/admin' +
+          ' && ' + KCP_KUBECONFIG_EXPORT,
+    serve_cmd = 'kubectl -n heimstatt get kubeconfigs.operator.kcp.io admin -o name -w' +
+                ' | while read -r _; do ' + KCP_KUBECONFIG_EXPORT + '; done',
+    resource_deps = ['heimstatt-admin-kubeconfig'],
+)
